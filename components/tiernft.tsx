@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-export default function Home() {
+export function TierNFT() {
   const CONTRACT_ADDRESS = "";
 
   const { isConnected } = useAccount();
