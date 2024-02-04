@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 export function TierNFT() {
-  const CONTRACT_ADDRESS = "";
+  const CONTRACT_ADDRESS = "0x";
 
   const { isConnected } = useAccount();
 
@@ -22,48 +22,49 @@ export function TierNFT() {
     writeAsync: mint,
     isLoading: isMintLoading,
   } = useContractWrite({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: TierABI.abi,
+    address: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
     functionName: "mint",
   });
 
-  const mintToken = async (e) => {
+  const mintToken = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const target = e.target as HTMLButtonElement;
     try {
       setIsMinting(true);
       setModalShow(true);
       let mintTxn = await mint({
-        recklesslySetUnpreparedOverrides: {
-          value: parseEther(e.target.value),
-        },
+        value: parseEther(target.value),
       });
-      await mintTxn.wait();
+      // await mintTxn.wait();
       console.log("This is the mint data", mintData);
       refetchTokenData();
       setIsMinting(false);
-    } catch (error) {
+    } catch (e) {
+      const error = e as Error;
       console.log("Error minting NFT", error.message);
     }
   };
 
   const { data: tokenData, refetch: refetchTokenData } = useContractRead({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: TierABI.abi,
+    address: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
     functionName: "totalSupply",
     watch: true,
   });
 
-  const { data: tokenURI } = useContractRead({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: TierABI.abi,
+  const { data: tokenURI }: { data: any } = useContractRead({
+    address: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
     functionName: "tokenURI",
-    args: tokenData,
+    args: tokenData as any,
     watch: true,
   });
 
   useEffect(() => {
     try {
       setIsUserConnected(isConnected);
-    } catch (error) {
+    } catch (e) {
+      const error = e as Error;
       console.log("Error connecting to user", error.message);
     }
   }, [isConnected]);
@@ -75,7 +76,8 @@ export function TierNFT() {
           JSON.parse(window.atob(tokenURI.substring(tokenURI.indexOf(",") + 1)))
         );
       }
-    } catch (error) {
+    } catch (e) {
+      const error = e as Error;
       console.log("Error fetching token URI", error.message);
     }
   }, [tokenData, tokenURI]);
