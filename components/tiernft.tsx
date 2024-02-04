@@ -1,10 +1,10 @@
 import Head from "next/head";
-import styles from "@/styles/Home.module.css";
+import styles from "../styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useContractRead, useContractWrite } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
 import { parseEther } from "viem";
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import Image from "next/image";
 
 export function TierNFT() {
@@ -13,7 +13,10 @@ export function TierNFT() {
   const { isConnected } = useAccount();
 
   const [isUserConnected, setIsUserConnected] = useState(false);
-  const [latestNFTMinted, setLatestNFTMinted] = useState(0);
+  const [latestNFTMinted, setLatestNFTMinted] = useState<{
+    name: string;
+    image: string;
+  }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
 
@@ -153,15 +156,15 @@ export function TierNFT() {
             </div>
           </div>
           {modalShow && (
-            <div className="modal">
+            <div style={modal}>
               {isMinting ? (
-                <div className="modalContent">
+                <div style={modalContent}>
                   <h2>Minting...</h2>
                 </div>
               ) : (
-                <div className="modalContent">
+                <div style={modalContent}>
                   <h2>Mint Successful</h2>
-                  <div className="modalBody">
+                  <div style={modalBody}>
                     <h3>{latestNFTMinted.name}</h3>
                     <Image
                       src={latestNFTMinted.image}
@@ -170,8 +173,8 @@ export function TierNFT() {
                       alt="latest minted nft"
                     />
                   </div>
-                  <div className="modalFooter">
-                    <button className="modalButton">
+                  <div style={modalFooter}>
+                    <button style={modalButton}>
                       <a
                         href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${tokenData}`}
                         target="_blank"
@@ -179,9 +182,9 @@ export function TierNFT() {
                         View on OpenSea
                       </a>
                     </button>
-                    <button className="modalButton">
+                    <button style={modalButton}>
                       <a
-                        href={`https://mumbai.polygonscan.com/tx/${mintData.hash}`}
+                        href={`https://mumbai.polygonscan.com/tx/${mintData?.hash}`}
                         target="_blank"
                       >
                         View on Polygonscan
@@ -189,7 +192,7 @@ export function TierNFT() {
                     </button>
                     <button
                       onClick={() => setModalShow(false)}
-                      className="modalButton"
+                      style={modalButton}
                     >
                       Close
                     </button>
@@ -208,7 +211,7 @@ export function TierNFT() {
   );
 }
 
-const header = {
+const header: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -217,14 +220,14 @@ const header = {
   paddingRight: "50px",
 };
 
-const NFTFlex = {
+const NFTFlex: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-evenly",
   gap: "50px",
 };
 
-const NFTCard = {
+const NFTCard: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   border: "2px solid white",
@@ -235,7 +238,7 @@ const NFTCard = {
   fontWeight: "bold",
 };
 
-const NFTMint = {
+const NFTMint: CSSProperties = {
   fontWeight: "700",
   padding: "5px 20px",
   border: "2px solid white",
@@ -245,7 +248,7 @@ const NFTMint = {
   cursor: "pointer",
 };
 
-const modal = {
+const modal: CSSProperties = {
   position: "fixed",
   left: "0",
   top: "0",
@@ -259,20 +262,20 @@ const modal = {
   zIndex: "1",
 };
 
-const modalContent = {
+const modalContent: CSSProperties = {
   backgroundColor: "#fff",
   padding: "10px 30px",
   borderRadius: "16px",
   color: "#000",
 };
 
-const modalBody = {
+const modalBody: CSSProperties = {
   padding: "20px",
   borderTop: "1px solid #eee",
   borderBottom: "1px solid #eee",
 };
 
-const modalFooter = {
+const modalFooter: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: "10px",
@@ -280,7 +283,7 @@ const modalFooter = {
   justifyContent: "space-evenly",
 };
 
-const modalButton = {
+const modalButton: CSSProperties = {
   padding: "10px 20px",
   backgroundColor: "#fff",
   color: "#666",
