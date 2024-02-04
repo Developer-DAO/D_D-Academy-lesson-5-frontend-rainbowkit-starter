@@ -2,8 +2,8 @@ import Head from "next/head";
 import styles from "@/styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useContractRead, useContractWrite } from "wagmi";
-import TierABI from "@/artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { ethers } from "ethers";
+import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
+import { parseEther } from "viem";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
@@ -33,7 +33,7 @@ export function TierNFT() {
       setModalShow(true);
       let mintTxn = await mint({
         recklesslySetUnpreparedOverrides: {
-          value: ethers.utils.parseEther(e.target.value),
+          value: parseEther(e.target.value),
         },
       });
       await mintTxn.wait();
