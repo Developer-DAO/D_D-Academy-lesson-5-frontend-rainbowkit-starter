@@ -1,14 +1,20 @@
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useContractRead, useContractWrite } from "wagmi";
+import {
+  useAccount,
+  useContractRead,
+  useContractWrite,
+  usePrepareContractWrite,
+} from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
 import { parseEther } from "viem";
 import { CSSProperties, useEffect, useState } from "react";
 import Image from "next/image";
 
 export function TierNFT() {
-  const CONTRACT_ADDRESS = "0x";
+  const CONTRACT_ADDRESS = process.env
+    .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
   const { isConnected } = useAccount();
 
@@ -20,25 +26,32 @@ export function TierNFT() {
   const [modalShow, setModalShow] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
 
+  const { config } = usePrepareContractWrite({
+    address: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
+    chainId: 80001,
+    functionName: "mint",
+    value: parseEther("0.01"),
+    args: [],
+    onError: (e) => {
+      console.log("Error minting NFT", e);
+    },
+  });
+
   const {
     data: mintData,
     writeAsync: mint,
     isLoading: isMintLoading,
-  } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    functionName: "mint",
-  });
+  } = useContractWrite(config);
 
   const mintToken = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const target = e.target as HTMLButtonElement;
     try {
       setIsMinting(true);
       setModalShow(true);
-      let mintTxn = await mint({
-        value: parseEther(target.value),
-      });
-      // await mintTxn.wait();
+      if (mint) {
+        let mintTxn = await mint();
+      }
       console.log("This is the mint data", mintData);
       refetchTokenData();
       setIsMinting(false);
