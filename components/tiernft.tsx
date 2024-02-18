@@ -6,9 +6,10 @@ import {
   useContractRead,
   useContractWrite,
   usePrepareContractWrite,
+  useWaitForTransaction,
 } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { parseEther } from "viem";
+import { formatUnits, parseEther } from "viem";
 import { CSSProperties, useEffect, useState } from "react";
 import Image from "next/image";
 
@@ -24,18 +25,18 @@ export function TierNFT() {
     image: string;
   }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
+  const [mintingPrice, setMintingPrice] = useState("0");
 
   const { config } = usePrepareContractWrite({
     address: CONTRACT_ADDRESS,
     abi: TierABI.abi,
-    chainId: 80001,
     functionName: "mint",
-    value: parseEther("0.01"),
+    value: parseEther(mintingPrice),
     args: [],
     onError: (e) => {
       console.log("Error minting NFT", e);
     },
+    enabled: mintingPrice !== "0",
   });
 
   const {
@@ -44,36 +45,34 @@ export function TierNFT() {
     isLoading: isMintLoading,
   } = useContractWrite(config);
 
-  const mintToken = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    const target = e.target as HTMLButtonElement;
-    try {
-      setIsMinting(true);
-      setModalShow(true);
-      if (mint) {
-        let mintTxn = await mint();
-      }
-      console.log("This is the mint data", mintData);
-      refetchTokenData();
-      setIsMinting(false);
-    } catch (e) {
-      const error = e as Error;
-      console.log("Error minting NFT", error.message);
-    }
-  };
+  const { data: txData } = useWaitForTransaction({
+    hash: mintData?.hash,
+  });
 
-  const { data: tokenData, refetch: refetchTokenData } = useContractRead({
+  const { data: tokenSupply, refetch: refetchTokenSupply } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     functionName: "totalSupply",
     watch: true,
+    enabled: isUserConnected,
   });
+
+  useEffect(() => {
+    if (mintingPrice !== "0" && mint) {
+      setModalShow(true);
+      mint();
+      setMintingPrice("0");
+      refetchTokenSupply();
+    }
+  }, [mintingPrice, mint, refetchTokenSupply]);
 
   const { data: tokenURI }: { data: any } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     functionName: "tokenURI",
-    args: tokenData as any,
+    args: [Number(tokenSupply as bigint) - 1], // FIXME: this shouldn't be last tokenSupply, but rather the latest minted token
     watch: true,
+    enabled: isUserConnected,
   });
 
   useEffect(() => {
@@ -96,7 +95,7 @@ export function TierNFT() {
       const error = e as Error;
       console.log("Error fetching token URI", error.message);
     }
-  }, [tokenData, tokenURI]);
+  }, [tokenURI]);
 
   return (
     <div className={styles.container}>
@@ -117,7 +116,7 @@ export function TierNFT() {
         <main className={styles.main}>
           <div style={NFTFlex}>
             <div style={NFTCard}>
-              <h2> Tier 0</h2>
+              <h2>Tier 0</h2>
               <Image
                 src="/nfts/0_basic.svg"
                 width="200"
@@ -125,8 +124,9 @@ export function TierNFT() {
                 alt="basic tier nft"
               />
               <button
-                value="0.01"
-                onClick={(e) => mintToken(e)}
+                onClick={() => {
+                  setMintingPrice("0.01");
+                }}
                 style={NFTMint}
                 disabled={isMintLoading}
               >
@@ -134,7 +134,7 @@ export function TierNFT() {
               </button>
             </div>
             <div style={NFTCard}>
-              <h2> Tier 1</h2>
+              <h2>Tier 1</h2>
               <Image
                 src="/nfts/1_medium.svg"
                 width="200"
@@ -142,8 +142,9 @@ export function TierNFT() {
                 alt="medium tier nft"
               />
               <button
-                value="0.02"
-                onClick={(e) => mintToken(e)}
+                onClick={() => {
+                  setMintingPrice("0.02");
+                }}
                 style={NFTMint}
                 disabled={isMintLoading}
               >
@@ -159,8 +160,9 @@ export function TierNFT() {
                 alt="premium tier nft"
               />
               <button
-                value="0.05"
-                onClick={(e) => mintToken(e)}
+                onClick={() => {
+                  setMintingPrice("0.05");
+                }}
                 style={NFTMint}
                 disabled={isMintLoading}
               >
@@ -170,7 +172,7 @@ export function TierNFT() {
           </div>
           {modalShow && (
             <div style={modal}>
-              {isMinting ? (
+              {txData === undefined ? (
                 <div style={modalContent}>
                   <h2>Minting...</h2>
                 </div>
@@ -188,20 +190,27 @@ export function TierNFT() {
                   </div>
                   <div style={modalFooter}>
                     <button style={modalButton}>
-                      <a
-                        href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${tokenData}`}
-                        target="_blank"
-                      >
-                        View on OpenSea
-                      </a>
+                      {tokenSupply != undefined && (
+                        <a
+                          href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${formatUnits(
+                            tokenSupply as bigint,
+                            0
+                          )}`}
+                          target="_blank"
+                        >
+                          View on OpenSea
+                        </a>
+                      )}
                     </button>
                     <button style={modalButton}>
-                      <a
-                        href={`https://mumbai.polygonscan.com/tx/${mintData?.hash}`}
-                        target="_blank"
-                      >
-                        View on Polygonscan
-                      </a>
+                      {txData && txData.transactionHash ? (
+                        <a
+                          href={`https://mumbai.polygonscan.com/tx/${txData.transactionHash}`}
+                          target="_blank"
+                        >
+                          View on Polygonscan
+                        </a>
+                      ) : undefined}
                     </button>
                     <button
                       onClick={() => setModalShow(false)}
@@ -226,6 +235,7 @@ export function TierNFT() {
 
 const header: CSSProperties = {
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "space-between",
   paddingTop: "20px",
