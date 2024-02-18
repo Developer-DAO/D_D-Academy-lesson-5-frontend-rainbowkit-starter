@@ -3,21 +3,26 @@ import styles from "../styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useAccount,
+  useContractEvent,
   useContractRead,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { formatUnits, parseEther } from "viem";
+import { Log, formatUnits, parseEther } from "viem";
 import { CSSProperties, useEffect, useState } from "react";
 import Image from "next/image";
+
+type LogWithArgs = Log & {
+  args: { from: string; to: string; tokenId: bigint };
+};
 
 export function TierNFT() {
   const CONTRACT_ADDRESS = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
 
   const [isUserConnected, setIsUserConnected] = useState(false);
   const [latestNFTMinted, setLatestNFTMinted] = useState<{
@@ -26,13 +31,15 @@ export function TierNFT() {
   }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
+  const [mintedTokenId, setMintedTokenId] = useState<bigint | undefined>(
+    undefined
+  );
 
   const { config } = usePrepareContractWrite({
     address: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     functionName: "mint",
     value: parseEther(mintingPrice),
-    args: [],
     onError: (e) => {
       console.log("Error minting NFT", e);
     },
@@ -49,30 +56,21 @@ export function TierNFT() {
     hash: mintData?.hash,
   });
 
-  const { data: tokenSupply, refetch: refetchTokenSupply } = useContractRead({
-    address: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    functionName: "totalSupply",
-    watch: true,
-    enabled: isUserConnected,
-  });
-
   useEffect(() => {
     if (mintingPrice !== "0" && mint) {
       setModalShow(true);
       mint();
       setMintingPrice("0");
-      refetchTokenSupply();
     }
-  }, [mintingPrice, mint, refetchTokenSupply]);
+  }, [mintingPrice, mint]);
 
   const { data: tokenURI }: { data: any } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     functionName: "tokenURI",
-    args: [Number(tokenSupply as bigint) - 1], // FIXME: this shouldn't be last tokenSupply, but rather the latest minted token
+    args: [mintedTokenId],
     watch: true,
-    enabled: isUserConnected,
+    enabled: mintedTokenId != undefined,
   });
 
   useEffect(() => {
@@ -83,6 +81,26 @@ export function TierNFT() {
       console.log("Error connecting to user", error.message);
     }
   }, [isConnected]);
+
+  // await for mint to complete
+  const unwatch = useContractEvent({
+    address: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
+    eventName: "Transfer",
+    listener(events) {
+      if (events.length === 0) {
+        return;
+      }
+      events.forEach((event) => {
+        const extendedEvent = event as LogWithArgs;
+        const { to, tokenId } = extendedEvent.args;
+        if (to === address) {
+          setMintedTokenId(tokenId);
+          unwatch?.();
+        }
+      });
+    },
+  });
 
   useEffect(() => {
     try {
@@ -180,20 +198,22 @@ export function TierNFT() {
                 <div style={modalContent}>
                   <h2>Mint Successful</h2>
                   <div style={modalBody}>
-                    <h3>{latestNFTMinted.name}</h3>
-                    <Image
-                      src={latestNFTMinted.image}
-                      height="200"
-                      width="200"
-                      alt="latest minted nft"
-                    />
+                    {latestNFTMinted.name && <h3>{latestNFTMinted.name}</h3>}
+                    {latestNFTMinted.image && (
+                      <Image
+                        src={latestNFTMinted.image}
+                        height="200"
+                        width="200"
+                        alt="Minted NFT"
+                      />
+                    )}
                   </div>
                   <div style={modalFooter}>
                     <button style={modalButton}>
-                      {tokenSupply != undefined && (
+                      {mintedTokenId != undefined && (
                         <a
                           href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${formatUnits(
-                            tokenSupply as bigint,
+                            mintedTokenId,
                             0
                           )}`}
                           target="_blank"
