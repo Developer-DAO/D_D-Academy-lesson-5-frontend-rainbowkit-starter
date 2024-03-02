@@ -1,6 +1,7 @@
-import Head from "next/head";
-import styles from "../styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Head from "next/head";
+import { CSSProperties, useEffect, useState } from "react";
+import { Log, parseEther } from "viem";
 import {
   useAccount,
   useContractEvent,
@@ -10,9 +11,10 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { Log, formatUnits, parseEther } from "viem";
-import { CSSProperties, useEffect, useState } from "react";
-import Image from "next/image";
+import { NftCard } from "../components/nftcard";
+import styles from "../styles/Home.module.css";
+import { Minting } from "./minting";
+import { SuccessfulMint } from "./successfulmint";
 
 type LogWithArgs = Log & {
   args: { from: string; to: string; tokenId: bigint };
@@ -126,123 +128,60 @@ export function TierNFT() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
       <header style={header}>
         <h1>TierNFTs</h1>
         <ConnectButton />
       </header>
+
       {isUserConnected ? (
         <main className={styles.main}>
           <div style={NFTFlex}>
-            <div style={NFTCard}>
-              <h2>Tier 0</h2>
-              <Image
-                src="/nfts/0_basic.svg"
-                width="200"
-                height="200"
-                alt="basic tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.01");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
-            <div style={NFTCard}>
-              <h2>Tier 1</h2>
-              <Image
-                src="/nfts/1_medium.svg"
-                width="200"
-                height="200"
-                alt="medium tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.02");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
-            <div style={NFTCard}>
-              <h2>Tier 2</h2>
-              <Image
-                src="/nfts/2_premium.svg"
-                width="200"
-                height="200"
-                alt="premium tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.05");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
+            <NftCard
+              name="Tier 0"
+              imageSrc="/nfts/0_basic.svg"
+              alt="basic tier nft"
+              onClick={() => {
+                setMintingPrice("0.01");
+              }}
+              disabled={isMintLoading}
+            />
+
+            <NftCard
+              name="Tier 1"
+              imageSrc="/nfts/1_medium.svg"
+              alt="medium tier nft"
+              onClick={() => {
+                setMintingPrice("0.02");
+              }}
+              disabled={isMintLoading}
+            />
+
+            <NftCard
+              name="Tier 2"
+              imageSrc="/nfts/2_premium.svg"
+              alt="premium tier nft"
+              onClick={() => {
+                setMintingPrice("0.05");
+              }}
+              disabled={isMintLoading}
+            />
           </div>
-          {modalShow && (
-            <div style={modal}>
-              {txData === undefined ? (
-                <div style={modalContent}>
-                  <h2>Minting...</h2>
-                </div>
-              ) : (
-                <div style={modalContent}>
-                  <h2>Mint Successful</h2>
-                  <div style={modalBody}>
-                    {latestNFTMinted.name && <h3>{latestNFTMinted.name}</h3>}
-                    {latestNFTMinted.image && (
-                      <Image
-                        src={latestNFTMinted.image}
-                        height="200"
-                        width="200"
-                        alt="Minted NFT"
-                      />
-                    )}
-                  </div>
-                  <div style={modalFooter}>
-                    <button style={modalButton}>
-                      {mintedTokenId != undefined && (
-                        <a
-                          href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${formatUnits(
-                            mintedTokenId,
-                            0
-                          )}`}
-                          target="_blank"
-                        >
-                          View on OpenSea
-                        </a>
-                      )}
-                    </button>
-                    <button style={modalButton}>
-                      {txData && txData.transactionHash ? (
-                        <a
-                          href={`https://mumbai.polygonscan.com/tx/${txData.transactionHash}`}
-                          target="_blank"
-                        >
-                          View on Polygonscan
-                        </a>
-                      ) : undefined}
-                    </button>
-                    <button
-                      onClick={() => setModalShow(false)}
-                      style={modalButton}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+
+          {modalShow &&
+            (txData ? (
+              <SuccessfulMint
+                contractAddress={CONTRACT_ADDRESS}
+                nftMinted={latestNFTMinted}
+                mintedTokenId={mintedTokenId}
+                onClick={() => {
+                  setModalShow(false);
+                }}
+                txData={txData}
+              />
+            ) : (
+              <Minting />
+            ))}
         </main>
       ) : (
         <main className={styles.main}>
@@ -268,73 +207,4 @@ const NFTFlex: CSSProperties = {
   alignItems: "center",
   justifyContent: "space-evenly",
   gap: "50px",
-};
-
-const NFTCard: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  border: "2px solid white",
-  borderRadius: "10px",
-  padding: "20px",
-  alignItems: "center",
-  gap: "10px",
-  fontWeight: "bold",
-};
-
-const NFTMint: CSSProperties = {
-  fontWeight: "700",
-  padding: "5px 20px",
-  border: "2px solid white",
-  color: "white",
-  backgroundColor: "black",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const modal: CSSProperties = {
-  position: "fixed",
-  left: "0",
-  top: "0",
-  right: "0",
-  bottom: "0",
-  backgroundColor: "rgba(0, 0, 0, 0.8)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textAlign: "center",
-  zIndex: "1",
-};
-
-const modalContent: CSSProperties = {
-  backgroundColor: "#fff",
-  padding: "10px 30px",
-  borderRadius: "16px",
-  color: "#000",
-};
-
-const modalBody: CSSProperties = {
-  padding: "20px",
-  borderTop: "1px solid #eee",
-  borderBottom: "1px solid #eee",
-};
-
-const modalFooter: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-  padding: "20px",
-  justifyContent: "space-evenly",
-};
-
-const modalButton: CSSProperties = {
-  padding: "10px 20px",
-  backgroundColor: "#fff",
-  color: "#666",
-  border: "0",
-  borderRadius: "10px",
-  fontSize: "18px",
-  fontWeight: "700",
-  boxShadow:
-    "0 0.2em 0.4em 0 rgba(0, 0, 0, 0.2), 0 0.3em 1em 0 rgba(0, 0, 0, 0.19)",
-  cursor: "pointer",
 };
