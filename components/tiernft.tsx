@@ -12,7 +12,6 @@ import {
 } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
 import { NftCard } from "../components/nftcard";
-import styles from "../styles/Home.module.css";
 import { Minting } from "./minting";
 import { SuccessfulMint } from "./successfulmint";
 
@@ -118,7 +117,7 @@ export function TierNFT() {
   }, [tokenURI]);
 
   return (
-    <div className={styles.container}>
+    <div>
       <Head>
         <title>NFT Minter</title>
         <meta
@@ -135,7 +134,7 @@ export function TierNFT() {
       </header>
 
       {isUserConnected ? (
-        <main className={styles.main}>
+        <main>
           <div style={NFTFlex}>
             <NftCard
               name="Tier 0"
@@ -184,7 +183,7 @@ export function TierNFT() {
             ))}
         </main>
       ) : (
-        <main className={styles.main}>
+        <main>
           <div>Please connect your wallet.</div>
         </main>
       )}
