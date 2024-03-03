@@ -14,6 +14,7 @@ import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
 import { NftCard } from "../components/nftcard";
 import { Minting } from "./minting";
 import { SuccessfulMint } from "./successfulmint";
+import { useMint } from "../hooks/useMint";
 
 type LogWithArgs = Log & {
   args: { from: string; to: string; tokenId: bigint };
@@ -36,22 +37,11 @@ export function TierNFT() {
     undefined
   );
 
-  const { config } = usePrepareContractWrite({
-    address: CONTRACT_ADDRESS,
+  const { mint, mintData, isMintLoading } = useMint({
+    contractAddress: CONTRACT_ADDRESS,
     abi: TierABI.abi,
-    functionName: "mint",
-    value: parseEther(mintingPrice),
-    onError: (e) => {
-      console.log("Error minting NFT", e);
-    },
-    enabled: mintingPrice !== "0",
+    mintingPrice: mintingPrice,
   });
-
-  const {
-    data: mintData,
-    writeAsync: mint,
-    isLoading: isMintLoading,
-  } = useContractWrite(config);
 
   const { data: txData } = useWaitForTransaction({
     hash: mintData?.hash,
