@@ -7,7 +7,7 @@ export function SuccessfulMint({
   nftMinted,
   mintedTokenId,
   txData,
-  onClick,
+  onClose,
 }: {
   contractAddress: `0x${string}`;
   nftMinted: {
@@ -16,7 +16,7 @@ export function SuccessfulMint({
   };
   mintedTokenId?: bigint;
   txData?: TransactionReceipt;
-  onClick: () => void;
+  onClose: () => void;
 }) {
   return (
     <div style={modal}>
@@ -58,7 +58,7 @@ export function SuccessfulMint({
                 </a>
               ) : undefined}
             </button>
-            <button onClick={onClick} style={modalButton}>
+            <button onClick={onClose} style={modalButton}>
               Close
             </button>
           </div>

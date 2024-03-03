@@ -9,10 +9,10 @@ import { useMint } from "../hooks/useMint";
 import { Minting } from "./minting";
 import { SuccessfulMint } from "./successfulmint";
 
-export function TierNFT() {
-  const CONTRACT_ADDRESS = process.env
-    .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+const CONTRACT_ADDRESS = process.env
+  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
+export function TierNFT() {
   const { isConnected, address } = useAccount();
   const [isUserConnected, setIsUserConnected] = useState(false);
   const [modalShow, setModalShow] = useState(false);
@@ -24,10 +24,11 @@ export function TierNFT() {
     mintingPrice: mintingPrice,
   });
 
+  // when we have a mint price for NFT that user picked, start the mint!
   useEffect(() => {
     if (mintingPrice !== "0" && mint) {
-      setModalShow(true);
       mint();
+      setModalShow(true);
       setMintingPrice("0");
     }
   }, [mintingPrice, mint]);
@@ -104,7 +105,7 @@ export function TierNFT() {
                 contractAddress={CONTRACT_ADDRESS}
                 nftMinted={latestNFTMinted}
                 mintedTokenId={mintedTokenId}
-                onClick={() => {
+                onClose={() => {
                   setModalShow(false);
                 }}
                 txData={txData}
