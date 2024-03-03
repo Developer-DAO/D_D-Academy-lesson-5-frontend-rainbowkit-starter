@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Log } from "viem";
 import { useContractEvent, useContractRead } from "wagmi";
 
@@ -18,6 +18,10 @@ export function useAwaitMintResult({
   const [mintedTokenId, setMintedTokenId] = useState<bigint | undefined>(
     undefined
   );
+  const [latestNFTMinted, setLatestNFTMinted] = useState<{
+    name: string;
+    image: string;
+  }>({ name: "", image: "" });
 
   // await for mint to complete
   const unwatch = useContractEvent({
@@ -48,8 +52,21 @@ export function useAwaitMintResult({
     enabled: mintedTokenId != undefined,
   });
 
+  useEffect(() => {
+    try {
+      if (tokenURI) {
+        setLatestNFTMinted(
+          JSON.parse(window.atob(tokenURI.substring(tokenURI.indexOf(",") + 1)))
+        );
+      }
+    } catch (e) {
+      const error = e as Error;
+      console.log("Error fetching token URI", error.message);
+    }
+  }, [tokenURI]);
+
   return {
-    tokenURI,
     mintedTokenId,
+    latestNFTMinted,
   };
 }

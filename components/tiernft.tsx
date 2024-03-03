@@ -15,10 +15,6 @@ export function TierNFT() {
 
   const { isConnected, address } = useAccount();
   const [isUserConnected, setIsUserConnected] = useState(false);
-  const [latestNFTMinted, setLatestNFTMinted] = useState<{
-    name: string;
-    image: string;
-  }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
 
@@ -36,7 +32,7 @@ export function TierNFT() {
     }
   }, [mintingPrice, mint]);
 
-  const { tokenURI, mintedTokenId } = useAwaitMintResult({
+  const { mintedTokenId, latestNFTMinted } = useAwaitMintResult({
     abi: TierABI.abi,
     contractAddress: CONTRACT_ADDRESS,
     userWalletAddress: address,
@@ -50,19 +46,6 @@ export function TierNFT() {
       console.log("Error connecting to user", error.message);
     }
   }, [isConnected]);
-
-  useEffect(() => {
-    try {
-      if (tokenURI) {
-        setLatestNFTMinted(
-          JSON.parse(window.atob(tokenURI.substring(tokenURI.indexOf(",") + 1)))
-        );
-      }
-    } catch (e) {
-      const error = e as Error;
-      console.log("Error fetching token URI", error.message);
-    }
-  }, [tokenURI]);
 
   return (
     <div>
