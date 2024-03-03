@@ -38,9 +38,18 @@ export function TierNFT() {
   // start mint via setting mintingPrice
   useEffect(() => {
     if (mintingPrice !== "0" && mint) {
-      mint();
-      setModalShow(true);
-      setMintingPrice("0");
+      mint()
+        .then(() => {
+          setModalShow(true);
+        })
+        .catch((e) => {
+          setModalShow(false);
+          const error = e as Error;
+          console.log("Error minting NFT", error.message);
+        })
+        .finally(() => {
+          setMintingPrice("0");
+        });
     }
   }, [mintingPrice, mint]);
 
