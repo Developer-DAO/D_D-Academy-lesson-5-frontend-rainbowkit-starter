@@ -1,5 +1,9 @@
 import { parseEther } from "viem";
-import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import {
+  useContractWrite,
+  usePrepareContractWrite,
+  useWaitForTransaction,
+} from "wagmi";
 
 export function useMint({
   abi,
@@ -27,9 +31,14 @@ export function useMint({
     isLoading: isMintLoading,
   } = useContractWrite(config);
 
+  const { data: txData } = useWaitForTransaction({
+    hash: mintData?.hash,
+  });
+
   return {
     mint,
     mintData,
     isMintLoading,
+    txData,
   };
 }

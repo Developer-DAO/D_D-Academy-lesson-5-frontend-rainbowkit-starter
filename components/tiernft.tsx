@@ -1,31 +1,19 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Head from "next/head";
 import { CSSProperties, useEffect, useState } from "react";
-import { Log, parseEther } from "viem";
-import {
-  useAccount,
-  useContractEvent,
-  useContractRead,
-  useContractWrite,
-  usePrepareContractWrite,
-  useWaitForTransaction,
-} from "wagmi";
+import { useAccount } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
 import { NftCard } from "../components/nftcard";
+import { useAwaitMintResult } from "../hooks/useAwaitMintResult";
+import { useMint } from "../hooks/useMint";
 import { Minting } from "./minting";
 import { SuccessfulMint } from "./successfulmint";
-import { useMint } from "../hooks/useMint";
-
-type LogWithArgs = Log & {
-  args: { from: string; to: string; tokenId: bigint };
-};
 
 export function TierNFT() {
   const CONTRACT_ADDRESS = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
   const { isConnected, address } = useAccount();
-
   const [isUserConnected, setIsUserConnected] = useState(false);
   const [latestNFTMinted, setLatestNFTMinted] = useState<{
     name: string;
@@ -33,18 +21,11 @@ export function TierNFT() {
   }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
-  const [mintedTokenId, setMintedTokenId] = useState<bigint | undefined>(
-    undefined
-  );
 
-  const { mint, mintData, isMintLoading } = useMint({
+  const { mint, isMintLoading, txData } = useMint({
     contractAddress: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     mintingPrice: mintingPrice,
-  });
-
-  const { data: txData } = useWaitForTransaction({
-    hash: mintData?.hash,
   });
 
   useEffect(() => {
@@ -55,13 +36,10 @@ export function TierNFT() {
     }
   }, [mintingPrice, mint]);
 
-  const { data: tokenURI }: { data: any } = useContractRead({
-    address: CONTRACT_ADDRESS,
+  const { tokenURI, mintedTokenId } = useAwaitMintResult({
     abi: TierABI.abi,
-    functionName: "tokenURI",
-    args: [mintedTokenId],
-    watch: true,
-    enabled: mintedTokenId != undefined,
+    contractAddress: CONTRACT_ADDRESS,
+    userWalletAddress: address,
   });
 
   useEffect(() => {
@@ -72,26 +50,6 @@ export function TierNFT() {
       console.log("Error connecting to user", error.message);
     }
   }, [isConnected]);
-
-  // await for mint to complete
-  const unwatch = useContractEvent({
-    address: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    eventName: "Transfer",
-    listener(events) {
-      if (events.length === 0) {
-        return;
-      }
-      events.forEach((event) => {
-        const extendedEvent = event as LogWithArgs;
-        const { to, tokenId } = extendedEvent.args;
-        if (to === address) {
-          setMintedTokenId(tokenId);
-          unwatch?.();
-        }
-      });
-    },
-  });
 
   useEffect(() => {
     try {
