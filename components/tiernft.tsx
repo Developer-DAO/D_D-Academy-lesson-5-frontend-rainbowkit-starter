@@ -1,78 +1,24 @@
-import Head from "next/head";
-import styles from "../styles/Home.module.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import {
-  useAccount,
-  useContractEvent,
-  useContractRead,
-  useContractWrite,
-  usePrepareContractWrite,
-  useWaitForTransaction,
-} from "wagmi";
-import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { Log, formatUnits, parseEther } from "viem";
+import Head from "next/head";
 import { CSSProperties, useEffect, useState } from "react";
-import Image from "next/image";
+import { useAccount } from "wagmi";
+import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
+import { NftCard } from "../components/nftcard";
+import { useAwaitMintResult } from "../hooks/useAwaitMintResult";
+import { useMint } from "../hooks/useMint";
+import { Minting } from "./minting";
+import { SuccessfulMint } from "./successfulmint";
 
-type LogWithArgs = Log & {
-  args: { from: string; to: string; tokenId: bigint };
-};
+const CONTRACT_ADDRESS = process.env
+  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
 export function TierNFT() {
-  const CONTRACT_ADDRESS = process.env
-    .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
-
-  const { isConnected, address } = useAccount();
-
   const [isUserConnected, setIsUserConnected] = useState(false);
-  const [latestNFTMinted, setLatestNFTMinted] = useState<{
-    name: string;
-    image: string;
-  }>({ name: "", image: "" });
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
-  const [mintedTokenId, setMintedTokenId] = useState<bigint | undefined>(
-    undefined
-  );
 
-  const { config } = usePrepareContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    functionName: "mint",
-    value: parseEther(mintingPrice),
-    onError: (e) => {
-      console.log("Error minting NFT", e);
-    },
-    enabled: mintingPrice !== "0",
-  });
-
-  const {
-    data: mintData,
-    writeAsync: mint,
-    isLoading: isMintLoading,
-  } = useContractWrite(config);
-
-  const { data: txData } = useWaitForTransaction({
-    hash: mintData?.hash,
-  });
-
-  useEffect(() => {
-    if (mintingPrice !== "0" && mint) {
-      setModalShow(true);
-      mint();
-      setMintingPrice("0");
-    }
-  }, [mintingPrice, mint]);
-
-  const { data: tokenURI }: { data: any } = useContractRead({
-    address: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    functionName: "tokenURI",
-    args: [mintedTokenId],
-    watch: true,
-    enabled: mintedTokenId != undefined,
-  });
-
+  // await for user to connect their wallet
+  const { isConnected, address } = useAccount();
   useEffect(() => {
     try {
       setIsUserConnected(isConnected);
@@ -82,170 +28,98 @@ export function TierNFT() {
     }
   }, [isConnected]);
 
-  // await for mint to complete
-  const unwatch = useContractEvent({
-    address: CONTRACT_ADDRESS,
+  // mint when the mintingPrice is set
+  const { mint, isMinting, txData } = useMint({
+    contractAddress: CONTRACT_ADDRESS,
     abi: TierABI.abi,
-    eventName: "Transfer",
-    listener(events) {
-      if (events.length === 0) {
-        return;
-      }
-      events.forEach((event) => {
-        const extendedEvent = event as LogWithArgs;
-        const { to, tokenId } = extendedEvent.args;
-        if (to === address) {
-          setMintedTokenId(tokenId);
-          unwatch?.();
-        }
-      });
-    },
+    mintingPrice: mintingPrice,
   });
 
+  // start mint via setting mintingPrice
   useEffect(() => {
-    try {
-      if (tokenURI) {
-        setLatestNFTMinted(
-          JSON.parse(window.atob(tokenURI.substring(tokenURI.indexOf(",") + 1)))
-        );
-      }
-    } catch (e) {
-      const error = e as Error;
-      console.log("Error fetching token URI", error.message);
+    if (mintingPrice !== "0" && mint) {
+      mint()
+        .then(() => {
+          setModalShow(true);
+        })
+        .catch((e) => {
+          setModalShow(false);
+          const error = e as Error;
+          console.log("Error minting NFT", error.message);
+        })
+        .finally(() => {
+          setMintingPrice("0");
+        });
     }
-  }, [tokenURI]);
+  }, [mintingPrice, mint]);
+
+  // when mint completes, return the minted nft we want to show
+  const { mintedTokenId, latestNFTMinted } = useAwaitMintResult({
+    abi: TierABI.abi,
+    contractAddress: CONTRACT_ADDRESS,
+    userWalletAddress: address,
+  });
 
   return (
-    <div className={styles.container}>
+    <div>
       <Head>
         <title>NFT Minter</title>
         <meta
           name="description"
           content="D_D Academy NFT Minter frontend integration project"
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
       </Head>
+
       <header style={header}>
         <h1>TierNFTs</h1>
         <ConnectButton />
       </header>
+
       {isUserConnected ? (
-        <main className={styles.main}>
+        <main>
           <div style={NFTFlex}>
-            <div style={NFTCard}>
-              <h2>Tier 0</h2>
-              <Image
-                src="/nfts/0_basic.svg"
-                width="200"
-                height="200"
-                alt="basic tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.01");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
-            <div style={NFTCard}>
-              <h2>Tier 1</h2>
-              <Image
-                src="/nfts/1_medium.svg"
-                width="200"
-                height="200"
-                alt="medium tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.02");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
-            <div style={NFTCard}>
-              <h2>Tier 2</h2>
-              <Image
-                src="/nfts/2_premium.svg"
-                width="200"
-                height="200"
-                alt="premium tier nft"
-              />
-              <button
-                onClick={() => {
-                  setMintingPrice("0.05");
-                }}
-                style={NFTMint}
-                disabled={isMintLoading}
-              >
-                Mint
-              </button>
-            </div>
+            <NftCard
+              name="Tier 0"
+              imageSrc="/nfts/0_basic.svg"
+              alt="basic tier nft"
+              onClick={() => setMintingPrice("0.01")}
+              disabled={isMinting}
+            />
+
+            <NftCard
+              name="Tier 1"
+              imageSrc="/nfts/1_medium.svg"
+              alt="medium tier nft"
+              onClick={() => setMintingPrice("0.02")}
+              disabled={isMinting}
+            />
+
+            <NftCard
+              name="Tier 2"
+              imageSrc="/nfts/2_premium.svg"
+              alt="premium tier nft"
+              onClick={() => setMintingPrice("0.05")}
+              disabled={isMinting}
+            />
           </div>
-          {modalShow && (
-            <div style={modal}>
-              {txData === undefined ? (
-                <div style={modalContent}>
-                  <h2>Minting...</h2>
-                </div>
-              ) : (
-                <div style={modalContent}>
-                  <h2>Mint Successful</h2>
-                  <div style={modalBody}>
-                    {latestNFTMinted.name && <h3>{latestNFTMinted.name}</h3>}
-                    {latestNFTMinted.image && (
-                      <Image
-                        src={latestNFTMinted.image}
-                        height="200"
-                        width="200"
-                        alt="Minted NFT"
-                      />
-                    )}
-                  </div>
-                  <div style={modalFooter}>
-                    <button style={modalButton}>
-                      {mintedTokenId != undefined && (
-                        <a
-                          href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${formatUnits(
-                            mintedTokenId,
-                            0
-                          )}`}
-                          target="_blank"
-                        >
-                          View on OpenSea
-                        </a>
-                      )}
-                    </button>
-                    <button style={modalButton}>
-                      {txData && txData.transactionHash ? (
-                        <a
-                          href={`https://mumbai.polygonscan.com/tx/${txData.transactionHash}`}
-                          target="_blank"
-                        >
-                          View on Polygonscan
-                        </a>
-                      ) : undefined}
-                    </button>
-                    <button
-                      onClick={() => setModalShow(false)}
-                      style={modalButton}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+
+          {modalShow &&
+            (txData ? (
+              <SuccessfulMint
+                contractAddress={CONTRACT_ADDRESS}
+                nftMinted={latestNFTMinted}
+                mintedTokenId={mintedTokenId}
+                onClose={() => {
+                  setModalShow(false);
+                }}
+                txData={txData}
+              />
+            ) : (
+              <Minting />
+            ))}
         </main>
       ) : (
-        <main className={styles.main}>
+        <main>
           <div>Please connect your wallet.</div>
         </main>
       )}
@@ -268,73 +142,4 @@ const NFTFlex: CSSProperties = {
   alignItems: "center",
   justifyContent: "space-evenly",
   gap: "50px",
-};
-
-const NFTCard: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  border: "2px solid white",
-  borderRadius: "10px",
-  padding: "20px",
-  alignItems: "center",
-  gap: "10px",
-  fontWeight: "bold",
-};
-
-const NFTMint: CSSProperties = {
-  fontWeight: "700",
-  padding: "5px 20px",
-  border: "2px solid white",
-  color: "white",
-  backgroundColor: "black",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const modal: CSSProperties = {
-  position: "fixed",
-  left: "0",
-  top: "0",
-  right: "0",
-  bottom: "0",
-  backgroundColor: "rgba(0, 0, 0, 0.8)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textAlign: "center",
-  zIndex: "1",
-};
-
-const modalContent: CSSProperties = {
-  backgroundColor: "#fff",
-  padding: "10px 30px",
-  borderRadius: "16px",
-  color: "#000",
-};
-
-const modalBody: CSSProperties = {
-  padding: "20px",
-  borderTop: "1px solid #eee",
-  borderBottom: "1px solid #eee",
-};
-
-const modalFooter: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-  padding: "20px",
-  justifyContent: "space-evenly",
-};
-
-const modalButton: CSSProperties = {
-  padding: "10px 20px",
-  backgroundColor: "#fff",
-  color: "#666",
-  border: "0",
-  borderRadius: "10px",
-  fontSize: "18px",
-  fontWeight: "700",
-  boxShadow:
-    "0 0.2em 0.4em 0 rgba(0, 0, 0, 0.2), 0 0.3em 1em 0 rgba(0, 0, 0, 0.19)",
-  cursor: "pointer",
 };
