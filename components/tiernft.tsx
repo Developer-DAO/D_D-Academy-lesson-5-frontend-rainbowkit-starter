@@ -13,32 +13,12 @@ const CONTRACT_ADDRESS = process.env
   .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
 export function TierNFT() {
-  const { isConnected, address } = useAccount();
   const [isUserConnected, setIsUserConnected] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
 
-  const { mint, isMinting, txData } = useMint({
-    contractAddress: CONTRACT_ADDRESS,
-    abi: TierABI.abi,
-    mintingPrice: mintingPrice,
-  });
-
-  // when we have a mint price for NFT that user picked, start the mint!
-  useEffect(() => {
-    if (mintingPrice !== "0" && mint) {
-      mint();
-      setModalShow(true);
-      setMintingPrice("0");
-    }
-  }, [mintingPrice, mint]);
-
-  const { mintedTokenId, latestNFTMinted } = useAwaitMintResult({
-    abi: TierABI.abi,
-    contractAddress: CONTRACT_ADDRESS,
-    userWalletAddress: address,
-  });
-
+  // await for user to connect their wallet
+  const { isConnected, address } = useAccount();
   useEffect(() => {
     try {
       setIsUserConnected(isConnected);
@@ -48,6 +28,29 @@ export function TierNFT() {
     }
   }, [isConnected]);
 
+  // mint when the mintingPrice is set
+  const { mint, isMinting, txData } = useMint({
+    contractAddress: CONTRACT_ADDRESS,
+    abi: TierABI.abi,
+    mintingPrice: mintingPrice,
+  });
+
+  // start mint via setting mintingPrice
+  useEffect(() => {
+    if (mintingPrice !== "0" && mint) {
+      mint();
+      setModalShow(true);
+      setMintingPrice("0");
+    }
+  }, [mintingPrice, mint]);
+
+  // when mint completes, return the minted nft we want to show
+  const { mintedTokenId, latestNFTMinted } = useAwaitMintResult({
+    abi: TierABI.abi,
+    contractAddress: CONTRACT_ADDRESS,
+    userWalletAddress: address,
+  });
+
   return (
     <div>
       <Head>
@@ -56,8 +59,6 @@ export function TierNFT() {
           name="description"
           content="D_D Academy NFT Minter frontend integration project"
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <header style={header}>
@@ -72,9 +73,7 @@ export function TierNFT() {
               name="Tier 0"
               imageSrc="/nfts/0_basic.svg"
               alt="basic tier nft"
-              onClick={() => {
-                setMintingPrice("0.01");
-              }}
+              onClick={() => setMintingPrice("0.01")}
               disabled={isMinting}
             />
 
@@ -82,9 +81,7 @@ export function TierNFT() {
               name="Tier 1"
               imageSrc="/nfts/1_medium.svg"
               alt="medium tier nft"
-              onClick={() => {
-                setMintingPrice("0.02");
-              }}
+              onClick={() => setMintingPrice("0.02")}
               disabled={isMinting}
             />
 
@@ -92,9 +89,7 @@ export function TierNFT() {
               name="Tier 2"
               imageSrc="/nfts/2_premium.svg"
               alt="premium tier nft"
-              onClick={() => {
-                setMintingPrice("0.05");
-              }}
+              onClick={() => setMintingPrice("0.05")}
               disabled={isMinting}
             />
           </div>
