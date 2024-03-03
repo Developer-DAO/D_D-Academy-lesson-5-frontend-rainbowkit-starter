@@ -18,7 +18,7 @@ export function TierNFT() {
   const [modalShow, setModalShow] = useState(false);
   const [mintingPrice, setMintingPrice] = useState("0");
 
-  const { mint, isMintLoading, txData } = useMint({
+  const { mint, isMinting, txData } = useMint({
     contractAddress: CONTRACT_ADDRESS,
     abi: TierABI.abi,
     mintingPrice: mintingPrice,
@@ -75,7 +75,7 @@ export function TierNFT() {
               onClick={() => {
                 setMintingPrice("0.01");
               }}
-              disabled={isMintLoading}
+              disabled={isMinting}
             />
 
             <NftCard
@@ -85,7 +85,7 @@ export function TierNFT() {
               onClick={() => {
                 setMintingPrice("0.02");
               }}
-              disabled={isMintLoading}
+              disabled={isMinting}
             />
 
             <NftCard
@@ -95,7 +95,7 @@ export function TierNFT() {
               onClick={() => {
                 setMintingPrice("0.05");
               }}
-              disabled={isMintLoading}
+              disabled={isMinting}
             />
           </div>
 

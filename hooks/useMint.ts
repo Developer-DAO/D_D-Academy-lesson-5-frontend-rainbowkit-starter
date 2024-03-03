@@ -28,7 +28,7 @@ export function useMint({
   const {
     data: mintData,
     writeAsync: mint,
-    isLoading: isMintLoading,
+    isLoading: isMinting,
   } = useContractWrite(config);
 
   const { data: txData } = useWaitForTransaction({
@@ -38,7 +38,7 @@ export function useMint({
   return {
     mint,
     mintData,
-    isMintLoading,
+    isMinting,
     txData,
   };
 }
