@@ -5,6 +5,7 @@ export function Minting() {
     <div style={modal}>
       <div style={modalContent}>
         <h2>Minting...</h2>
+        <p>Please be patient, this make take several seconds.</p>
       </div>
     </div>
   );
