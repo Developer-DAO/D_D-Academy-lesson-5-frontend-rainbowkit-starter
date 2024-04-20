@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { CSSProperties } from "react";
 import { TransactionReceipt, formatUnits } from "viem";
+import { useNetwork } from "wagmi";
 
 export function SuccessfulMint({
   contractAddress,
@@ -18,6 +19,7 @@ export function SuccessfulMint({
   txData?: TransactionReceipt;
   onClose: () => void;
 }) {
+  const { chain } = useNetwork();
   return (
     <div style={modal}>
       <div style={modalContent}>
@@ -51,7 +53,7 @@ export function SuccessfulMint({
             <button style={modalButton}>
               {txData && txData.transactionHash ? (
                 <a
-                  href={`https://mumbai.polygonscan.com/tx/${txData.transactionHash}`}
+                  href={`${chain?.blockExplorers?.etherscan?.url}/tx/${txData.transactionHash}`}
                   target="_blank"
                 >
                   View on Polygonscan
