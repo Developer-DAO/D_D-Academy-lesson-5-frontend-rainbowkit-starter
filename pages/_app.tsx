@@ -5,6 +5,7 @@ import type { AppProps } from "next/app";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { arbitrum, mainnet, optimism, polygon, base } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
 // import { defineChain } from "viem";
 
@@ -37,6 +38,7 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 // });
 
 import { Chain } from "wagmi";
+import { http } from "viem";
 
 export const polygonAmoy = {
   id: 80002,
@@ -74,7 +76,14 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
       ? [polygonAmoy]
       : []),
   ],
-  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID || "" })]
+  [
+    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID || "" }),
+    jsonRpcProvider({
+      rpc: (chain) => ({
+        http: `${chain.rpcUrls.default.http}`,
+      }),
+    }),
+  ]
 );
 
 const { connectors } = getDefaultWallets({
