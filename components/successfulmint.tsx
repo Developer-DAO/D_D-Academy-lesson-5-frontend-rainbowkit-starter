@@ -40,7 +40,7 @@ export function SuccessfulMint({
             <button style={modalButton}>
               {mintedTokenId != undefined && (
                 <a
-                  href={`https://testnets.opensea.io/assets/mumbai/${contractAddress}/${formatUnits(
+                  href={`https://testnets.opensea.io/assets/amoy/${contractAddress}/${formatUnits(
                     mintedTokenId,
                     0
                   )}`}
