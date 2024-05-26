@@ -3,7 +3,7 @@ import Head from "next/head";
 import { CSSProperties, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import TierABI from "../artifacts/contracts/TierNFT.sol/TierNFT.json";
-import { NftCard } from "../components/nftcard";
+import { NftCard } from "./nftcard";
 import { useAwaitMintResult } from "../hooks/useAwaitMintResult";
 import { useMint } from "../hooks/useMint";
 import { Minting } from "./minting";
