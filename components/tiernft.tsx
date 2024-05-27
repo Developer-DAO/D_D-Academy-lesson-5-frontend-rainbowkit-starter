@@ -73,9 +73,12 @@ export function TierNFT() {
       <header style={header}>
         <h1>TierNFTs</h1>
         <ConnectButton />
+        {!isUserConnected && (
+          <div style={pleaseConnectWallet}>Please connect your wallet.</div>
+        )}
       </header>
 
-      {isUserConnected ? (
+      {isUserConnected && (
         <main>
           <div style={NFTFlex}>
             <NftCard
@@ -118,10 +121,6 @@ export function TierNFT() {
               <Minting />
             ))}
         </main>
-      ) : (
-        <main>
-          <div>Please connect your wallet.</div>
-        </main>
       )}
     </div>
   );
@@ -132,9 +131,10 @@ const header: CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingTop: "20px",
-  paddingLeft: "50px",
-  paddingRight: "50px",
+};
+
+const pleaseConnectWallet: CSSProperties = {
+  marginTop: "20px",
 };
 
 const NFTFlex: CSSProperties = {
